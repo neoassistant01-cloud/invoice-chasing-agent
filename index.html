@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Chasing Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --bg: #0D1117;
+            --surface: #161B22;
+            --border: #30363D;
+            --accent: #58A6FF;
+            --success: #3FB950;
+            --warning: #D29922;
+            --danger: #F85149;
+            --text: #E6EDF3;
+            --text-dim: #8B949E;
+        }
+        
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .agent-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .agent-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .agent-details h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .agent-details p {
+            color: var(--text-dim);
+            font-size: 13px;
+        }
+        
+        .header-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1023px) {
+            .main-grid { grid-template-columns: 1fr 1fr; }
+            .activity-panel { grid-column: span 2; }
+        }
+        
+        @media (max-width: 767px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .activity-panel { grid-column: span 1; }
+        }
+        
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: border-color 0.2s;
+        }
+        
+        .card:hover { border-color: var(--accent); }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .card-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+        }
+        
+        /* Add Invoice Form */
+        .add-form { display: none; }
+        .add-form.open { display: block; }
+        
+        .form-group { margin-bottom: 16px; }
+        
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-family: inherit;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        
+        .btn-primary:hover { background: #79b8ff; }
+        
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        
+        .btn-secondary:hover { border-color: var(--text-dim); }
+        
+        .btn-success {
+            background: var(--success);
+            color: var(--bg);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        /* Invoices Table */
+        .invoices-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .invoice-row {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .invoice-row:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+        
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .invoice-client {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .invoice-amount {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        .invoice-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .invoice-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .invoice-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        /* Status Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .badge-pending {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+        
+        .badge-reminder {
+            background: var(--warning);
+            color: var(--bg);
+        }
+        
+        .badge-escalated {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .badge-resolved {
+            background: var(--success);
+            color: var(--bg);
+        }
+        
+        .due-countdown {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--bg);
+            color: var(--text-dim);
+        }
+        
+        .due-countdown.overdue {
+            background: rgba(248, 81, 73, 0.2);
+            color: var(--danger);
+        }
+        
+        .due-countdown.due-soon {
+            background: rgba(210, 153, 34, 0.2);
+            color: var(--warning);
+        }
+        
+        /* Activity Log */
+        .activity-log {
+            max-height: 500px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .log-entry {
+            border-left: 2px solid var(--border);
+            padding-left: 16px;
+            padding-bottom: 16px;
+            position: relative;
+        }
+        
+        .log-entry::before {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 0;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+        
+        .log-entry.thinking::before { background: var(--warning); }
+        .log-entry.action::before { background: var(--accent); }
+        .log-entry.result::before { background: var(--success); }
+        
+        .log-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        
+        .log-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        
+        .log-entry.thinking .log-label { color: var(--warning); }
+        .log-entry.action .log-label { color: var(--accent); }
+        .log-entry.result .log-label { color: var(--success); }
+        
+        .log-content {
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .log-content.thinking {
+            font-style: italic;
+            color: var(--text-dim);
+        }
+        
+        .log-message {
+            background: var(--bg);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            margin-top: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-dim);
+        }
+        
+        .empty-state h3 {
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        
+        /* Invoice Detail */
+        .invoice-detail {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            display: none;
+        }
+        
+        .invoice-detail.open { display: block; }
+        
+        .detail-title {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        
+        .detail-log {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-dim);
+            padding: 8px;
+            background: var(--surface);
+            border-radius: 6px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        /* Footer */
+        footer {
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+        
+        /* Toggle button */
+        .toggle-form {
+            width: 100%;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="agent-info">
+                <div class="agent-avatar">ICA</div>
+                <div class="agent-details">
+                    <h1>Invoice Chasing Agent <span class="status-dot"></span></h1>
+                    <p>Active · Handling your receivables</p>
+                </div>
+            </div>
+            <div class="header-time" id="currentTime"></div>
+        </header>
+        
+        <main class="main-grid">
+            <!-- Add Invoice Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Add Invoice</span>
+                </div>
+                <button class="btn btn-secondary toggle-form" onclick="toggleForm()">+ New Invoice</button>
+                <form class="add-form" id="invoiceForm">
+                    <div class="form-group">
+                        <label>Client Name *</label>
+                        <input type="text" id="clientName" required placeholder="Property tenant name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" id="clientEmail" required placeholder="client@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="clientPhone" placeholder="+1 555 123 4567">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount ($) *</label>
+                        <input type="number" id="invoiceAmount" required placeholder="0.00" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Due Date *</label>
+                        <input type="date" id="dueDate" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%">Add Invoice</button>
+                </form>
+            </div>
+            
+            <!-- Invoices Table -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Active Invoices</span>
+                    <span id="invoiceCount">0</span>
+                </div>
+                <div class="invoices-list" id="invoicesList">
+                    <div class="empty-state">
+                        <h3>No invoices yet</h3>
+                        <p>Add your first invoice to get started</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Activity Log -->
+            <div class="card activity-panel">
+                <div class="card-header">
+                    <span class="card-title">Agent Activity</span>
+                </div>
+                <div class="activity-log" id="activityLog">
+                    <div class="empty-state">
+                        <h3>No activity yet</h3>
+                        <p>Agent actions will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <span>Storage: </span><span id="storageStatus">Local</span>
+        </footer>
+    </div>
+    
+    <script>
+        // State
+        let invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+        let activities = JSON.parse(localStorage.getItem('activities') || '[]');
+        
+        // Initialize
+        updateTime();
+        setInterval(updateTime, 1000);
+        renderInvoices();
+        renderActivities();
+        
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleString('en-US', {
+                weekday: 'short', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+        }
+        
+        function toggleForm() {
+            document.getElementById('invoiceForm').classList.toggle('open');
+        }
+        
+        // Add Invoice
+        document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const invoice = {
+                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                clientName: document.getElementById('clientName').value,
+                clientEmail: document.getElementById('clientEmail').value,
+                clientPhone: document.getElementById('clientPhone').value,
+                amount: parseFloat(document.getElementById('invoiceAmount').value),
+                dueDate: document.getElementById('dueDate').value,
+                status: 'pending',
+                history: [],
+                createdAt: new Date().toISOString()
+            };
+            
+            invoices.push(invoice);
+            saveInvoices();
+            
+            addActivity('action', `New invoice added for ${invoice.clientName} - $${invoice.amount.toFixed(2)} due ${invoice.dueDate}`);
+            
+            document.getElementById('invoiceForm').reset();
+            document.getElementById('invoiceForm').classList.remove('open');
+            renderInvoices();
+        });
+        
+        // Agent Action
+        function takeAction(invoiceId) {
+            const invoice = invoices.find(i => i.id === invoiceId);
+            if (!invoice) return;
+            
+            const today = new Date();
+            const dueDate = new Date(invoice.dueDate);
+            const daysOverdue = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
+            
+            addActivity('thinking', `Analyzing invoice for ${invoice.clientName}...`);
+            
+            setTimeout(() => {
+                if (invoice.status === 'resolved') {
+                    addActivity('result', `Invoice already resolved. No action needed.`);
+                    return;
+                }
+                
+                let newStatus = invoice.status;
+                let message = '';
+                
+                if (daysOverdue <= 0 && invoice.status === 'pending') {
+                    addActivity('thinking', `Invoice is not yet due (${Math.abs(daysOverdue)} days until due). Sending friendly pre-reminder.`);
+                    newStatus = 'pending';
+                    message = generateMessage(invoice, 'pre-reminder', daysOverdue);
+                } else if (daysOverdue > 0 && daysOverdue <= 7 && invoice.status === 'pending') {
+                    addActivity('thinking', `Invoice is ${daysOverdue} days overdue. Sending first reminder.`);
+                    newStatus = 'reminder';
+                    message = generateMessage(invoice, 'reminder', daysOverdue);
+                } else if (daysOverdue > 7 && daysOverdue <= 14 && invoice.status === 'reminder') {
+                    addActivity('thinking', `Invoice ${daysOverdue} days overdue after reminder. Escalating to firm notice.`);
+                    newStatus = 'escalated';
+                    message = generateMessage(invoice, 'firm', daysOverdue);
+                } else if (daysOverdue > 14 && (invoice.status === 'reminder' || invoice.status === 'escalated')) {
+                    addActivity('thinking', `Invoice ${daysOverdue} days overdue. Sending final notice.`);
+                    newStatus = 'escalated';
+                    message = generateMessage(invoice, 'final', daysOverdue);
+                } else if (daysOverdue <= 0) {
+                    addActivity('thinking', `Invoice not yet due. Checking if a gentle reminder is appropriate...`);
+                    newStatus = 'pending';
+                    message = generateMessage(invoice, 'pre-reminder', daysOverdue);
+                } else {
+                    addActivity('thinking', `Invoice ${daysOverdue} days overdue. Current status: ${invoice.status}. Taking appropriate action.`);
+                    message = generateMessage(invoice, 'escalated', daysOverdue);
+                    newStatus = 'escalated';
+                }
+                
+                addActivity('action', `Simulated email sent to ${invoice.clientEmail}`);
+                addActivity('result', `Message delivered: "${message.substring(0, 60)}..."`);
+                
+                // Update invoice status
+                if (newStatus !== invoice.status) {
+                    invoice.status = newStatus;
+                }
+                
+                invoice.history.push({
+                    timestamp: new Date().toISOString(),
+                    action: 'message_sent',
+                    status: invoice.status,
+                    message: message
+                });
+                
+                saveInvoices();
+                renderInvoices();
+                
+            }, 500);
+        }
+        
+        function generateMessage(invoice, type, daysOverdue) {
+            const templates = {
+                'pre-reminder': `Hi ${invoice.clientName.split(' ')[0]},\n\nJust a friendly note that your invoice for $${invoice.amount.toFixed(2)} is coming due on ${invoice.dueDate}.\n\nNo action needed yet - just wanted to keep you in the loop!\n\nBest regards,\nYour Accounts Team`,
+                'reminder': `Hi ${invoice.clientName.split(' ')[0]},\n\nThis is a friendly reminder that your invoice for $${invoice.amount.toFixed(2)} was due on ${invoice.dueDate} (${daysOverdue} days ago).\n\nPlease let us know when we can expect payment.\n\nBest regards,\nYour Accounts Team`,
+                'firm': `Dear ${invoice.clientName.split(' ')[0]},\n\nThis is a second notice regarding your overdue invoice of $${invoice.amount.toFixed(2)} (${daysOverdue} days overdue).\n\nPlease remit payment within 7 days to avoid further escalation.\n\nRegards,\nYour Accounts Team`,
+                'final': `URGENT: Final Notice\n\nDear ${invoice.clientName},\n\nYour invoice for $${invoice.amount.toFixed(2)} is ${daysOverdue} days overdue. This is your final notice before collection proceedings.\n\nPayment must be received within 7 days.\n\nRegards,\nYour Accounts Team`,
+                'escalated': `Dear ${invoice.clientName},\n\nYour account has been escalated due to ${daysOverdue} days overdue balance of $${invoice.amount.toFixed(2)}.\n\nPlease contact us immediately to resolve this matter.\n\nRegards,\nYour Accounts Team`
+            };
+            return templates[type] || templates['reminder'];
+        }
+        
+        function markResolved(invoiceId) {
+            const invoice = invoices.find(i => i.id === invoiceId);
+            if (!invoice) return;
+            
+            invoice.status = 'resolved';
+            invoice.history.push({
+                timestamp: new Date().toISOString(),
+                action: 'resolved',
+                status: 'resolved',
+                message: 'Manually marked as resolved'
+            });
+            
+            saveInvoices();
+            addActivity('result', `Invoice for ${invoice.clientName} marked as RESOLVED`);
+            renderInvoices();
+        }
+        
+        function toggleDetail(invoiceId) {
+            const detail = document.getElementById(`detail-${invoiceId}`);
+            if (detail) {
+                detail.classList.toggle('open');
+            }
+        }
+        
+        // Activity Logging
+        function addActivity(type, content) {
+            const activity = {
+                id: Date.now(),
+                type: type,
+                content: content,
+                timestamp: new Date().toISOString()
+            };
+            
+            activities.unshift(activity);
+            
+            if (activities.length > 50) {
+                activities = activities.slice(0, 50);
+            }
+            
+            localStorage.setItem('activities', JSON.stringify(activities));
+            renderActivities();
+        }
+        
+        function renderActivities() {
+            const container = document.getElementById('activityLog');
+            
+            if (activities.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No activity yet</h3>
+                        <p>Agent actions will appear here</p>
+                    </div>`;
+                return;
+            }
+            
+            container.innerHTML = activities.map(activity => `
+                <div class="log-entry ${activity.type}">
+                    <div class="log-time">${formatTime(activity.timestamp)}</div>
+                    <div class="log-label">${activity.type}</div>
+                    <div class="log-content ${activity.type === 'thinking' ? 'thinking' : ''}">${activity.content}</div>
+                </div>
+            `).join('');
+        }
+        
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+            
+            if (diff < 60) return `${diff}s ago`;
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            
+            return date.toLocaleString('en-US', {
+                month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+        }
+        
+        // Render Invoices
+        function renderInvoices() {
+            const container = document.getElementById('invoicesList');
+            document.getElementById('invoiceCount').textContent = invoices.length;
+            
+            if (invoices.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No invoices yet</h3>
+                        <p>Add your first invoice to get started</p>
+                    </div>`;
+                return;
+            }
+            
+            // Sort by due date
+            const sorted = [...invoices].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+            
+            container.innerHTML = sorted.map(invoice => {
+                const daysUntil = getDaysUntil(invoice.dueDate);
+                const countdownClass = daysUntil < 0 ? 'overdue' : daysUntil <= 3 ? 'due-soon' : '';
+                const countdownText = daysUntil < 0 ? `${Math.abs(daysUntil)}d overdue` : `${daysUntil}d`;
+                const statusBadge = getStatusBadge(invoice.status);
+                
+                return `
+                <div class="invoice-row" onclick="toggleDetail('${invoice.id}')">
+                    <div class="invoice-header">
+                        <div>
+                            <div class="invoice-client">${invoice.clientName}</div>
+                            <div style="font-size:12px;color:var(--text-dim)">${invoice.clientEmail}</div>
+                        </div>
+                        <div class="invoice-amount">$${invoice.amount.toFixed(2)}</div>
+                    </div>
+                    <div class="invoice-meta">
+                        <span>📅 ${invoice.dueDate}</span>
+                        <span class="due-countdown ${countdownClass}">${countdownText}</span>
+                        <span>${statusBadge}</span>
+                    </div>
+                    <div class="invoice-actions" onclick="event.stopPropagation()">
+                        ${invoice.status !== 'resolved' ? `
+                            <button class="btn btn-primary btn-sm" onclick="takeAction('${invoice.id}')">Take Action</button>
+                            <button class="btn btn-success btn-sm" onclick="markResolved('${invoice.id}')">✓ Resolve</button>
+                        ` : '<span style="color:var(--success);font-size:12px">✓ Resolved</span>'}
+                    </div>
+                    <div class="invoice-detail" id="detail-${invoice.id}">
+                        <div class="detail-title">History</div>
+                        <div class="detail-log">
+                            ${invoice.history.map(h => 
+                                `<div>${new Date(h.timestamp).toLocaleString()} - ${h.action} (${h.status})</div>`
+                            ).join('') || 'No history yet'}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        
+        function getDaysUntil(dateStr) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const date = new Date(dateStr);
+            return Math.floor((date - today) / (1000 * 60 * 60 * 24));
+        }
+        
+        function getStatusBadge(status) {
+            const badges = {
+                'pending': '<span class="badge badge-pending">Pending</span>',
+                'reminder': '<span class="badge badge-reminder">Reminder</span>',
+                'escalated': '<span class="badge badge-escalated">Escalated</span>',
+                'resolved': '<span class="badge badge-resolved">Resolved</span>'
+            };
+            return badges[status] || badges['pending'];
+        }
+        
+        function saveInvoices() {
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+        }
+    </script>
+</body>
+</html>
